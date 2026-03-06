@@ -1,10 +1,44 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>frontend</title>
+    <title>MotoTribe</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              brand: {
+                DEFAULT: '#137fec',
+                dark: '#0a4da0',
+                glow: 'rgba(19, 127, 236, 0.3)',
+              },
+              surface: {
+                900: '#000000',
+                800: '#0a0a0a',
+                700: '#121212',
+                600: '#1a1a1a',
+              }
+            },
+            fontFamily: {
+              sans: ['Space Grotesk', 'sans-serif'],
+            },
+            borderRadius: {
+              'custom': '8px',
+            }
+          }
+        }
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
