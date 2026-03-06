@@ -117,11 +117,11 @@ function App() {
     }
   };
 
-  // --- UI RENDERERS ---
   const renderLogin = () => (
     <div className="min-h-screen flex items-center justify-center pt-20 overflow-hidden bg-black text-white antialiased font-sans relative">
       <div className="absolute inset-0 z-0">
         <div className="absolute inset-0 bg-black/60 z-10"></div>
+        <div className="absolute inset-0 opacity-20 z-0" style={{ backgroundImage: "url('/bg-pattern.png')", backgroundRepeat: 'repeat', backgroundSize: '300px' }}></div>
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#137fec]/20 rounded-full blur-[120px] animate-pulse-glow z-0"></div>
       </div>
       
@@ -211,6 +211,7 @@ function App() {
           <section className="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden">
             <div className="absolute inset-0 z-0">
               <div className="absolute inset-0 bg-black/60 z-10"></div>
+              <div className="absolute inset-0 opacity-20 z-0" style={{ backgroundImage: "url('/bg-pattern.png')", backgroundRepeat: 'repeat', backgroundSize: '300px' }}></div>
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#137fec]/20 rounded-full blur-[120px] animate-pulse-glow z-0"></div>
             </div>
             <div className="relative z-10 max-w-5xl mx-auto px-6 text-center">
@@ -236,8 +237,14 @@ function App() {
         )}
 
         {currentView === 'chat' && (
-          <section className="py-32 bg-black relative min-h-screen">
-            <div className="max-w-7xl mx-auto px-6">
+          <section className="py-32 relative min-h-screen overflow-hidden">
+            {/* NEW: Background Pattern added to Chat */}
+            <div className="absolute inset-0 z-0">
+              <div className="absolute inset-0 bg-black/60 z-10"></div>
+              <div className="absolute inset-0 opacity-20 z-0" style={{ backgroundImage: "url('/bg-pattern.png')", backgroundRepeat: 'repeat', backgroundSize: '300px' }}></div>
+            </div>
+
+            <div className="max-w-7xl mx-auto px-6 relative z-10">
               <div className="grid lg:grid-cols-2 gap-16 items-center">
                 <div>
                   <h2 className="text-4xl font-bold mb-6">Expert diagnostics, <br/><span className="text-[#137fec]">without the wait.</span></h2>
@@ -246,7 +253,7 @@ function App() {
                   </p>
                 </div>
                 
-                <div className="rounded-2xl p-6 min-h-[600px] flex flex-col shadow-2xl relative overflow-hidden" style={{ background: 'rgba(255, 255, 255, 0.03)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                <div className="rounded-2xl p-6 min-h-[600px] flex flex-col shadow-2xl relative overflow-hidden" style={{ background: 'rgba(25, 25, 25, 0.6)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
                   <div className="absolute -top-24 -right-24 w-48 h-48 bg-[#137fec]/20 rounded-full blur-3xl"></div>
                   
                   {/* Dynamic Chat History */}
@@ -258,7 +265,7 @@ function App() {
                             <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
                           </div>
                         )}
-                        <div className={`${msg.role === 'user' ? 'bg-[#137fec]/20 border border-[#137fec]/30 text-[#137fec]' : 'bg-[#121212]/50 border border-white/5'} p-4 rounded-custom max-w-[80%]`}>
+                        <div className={`${msg.role === 'user' ? 'bg-[#137fec]/20 border border-[#137fec]/30 text-[#137fec]' : 'bg-[#121212]/80 border border-white/5'} p-4 rounded-custom max-w-[80%] backdrop-blur-md`}>
                           <p className="text-sm leading-relaxed">{formatMessage(msg.text)}</p>
                         </div>
                       </div>
@@ -268,7 +275,7 @@ function App() {
                         <div className="w-10 h-10 rounded-full bg-[#137fec] flex items-center justify-center shrink-0">
                            <svg className="w-6 h-6 text-white animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                         </div>
-                        <div className="bg-[#121212]/50 p-4 rounded-custom border border-white/5 max-w-[80%]">
+                        <div className="bg-[#121212]/80 p-4 rounded-custom border border-white/5 max-w-[80%] backdrop-blur-md">
                           <p className="text-sm italic">Analyzing diagnostics...</p>
                         </div>
                       </div>
@@ -277,10 +284,10 @@ function App() {
                   </div>
 
                   {/* Chat Input */}
-                  <form onSubmit={handleSendMessage} className="relative">
-                    <input value={inputMessage} onChange={(e) => setInputMessage(e.target.value)} className="w-full bg-[#000] border border-white/10 rounded-custom px-6 py-4 text-sm focus:ring-[#137fec] focus:border-[#137fec] outline-none transition-all" placeholder="Describe your vehicle issue..." type="text" />
+                  <form onSubmit={handleSendMessage} className="relative z-10">
+                    <input value={inputMessage} onChange={(e) => setInputMessage(e.target.value)} className="w-full bg-black/60 border border-white/10 rounded-custom px-6 py-4 text-sm focus:ring-[#137fec] focus:border-[#137fec] outline-none transition-all backdrop-blur-md text-white" placeholder="Describe your vehicle issue..." type="text" />
                     <button type="submit" disabled={isTyping} className="absolute right-3 top-1/2 -translate-y-1/2 bg-[#137fec] p-2 rounded-custom hover:bg-[#0a4da0] transition-colors disabled:opacity-50">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
                     </button>
                   </form>
                 </div>
@@ -290,8 +297,14 @@ function App() {
         )}
 
         {currentView === 'map' && (
-          <section className="py-32 bg-[#000] min-h-screen">
-            <div className="max-w-7xl mx-auto px-6">
+          <section className="py-32 relative min-h-screen overflow-hidden">
+            {/* NEW: Background Pattern added to Map */}
+            <div className="absolute inset-0 z-0">
+              <div className="absolute inset-0 bg-black/60 z-10"></div>
+              <div className="absolute inset-0 opacity-20 z-0" style={{ backgroundImage: "url('/bg-pattern.png')", backgroundRepeat: 'repeat', backgroundSize: '300px' }}></div>
+            </div>
+
+            <div className="max-w-7xl mx-auto px-6 relative z-10">
               <div className="text-center mb-10">
                 <h2 className="text-4xl font-bold mb-4">Emergency Locator Radar</h2>
                 <p className="text-[#137fec] font-bold mb-6">{status}</p>
@@ -300,11 +313,11 @@ function App() {
                 </button>
               </div>
               
-              <div className="relative rounded-2xl overflow-hidden border border-white/10 h-[600px] flex items-center justify-center bg-[#0a0a0a]">
+              <div className="relative rounded-2xl overflow-hidden border border-white/10 h-[600px] flex items-center justify-center bg-[#0a0a0a]/80 backdrop-blur-md shadow-2xl">
                 {location ? (
                   <iframe title="Google Map" width="100%" height="100%" style={{ border: 0 }} loading="lazy" allowFullScreen src={`https://maps.google.com/maps?q=${location.lat},${location.lng}&z=16&output=embed`}></iframe>
                 ) : (
-                  <p className="opacity-50 tracking-widest uppercase">Radar Offline. Initiate Ping.</p>
+                  <p className="opacity-50 tracking-widest uppercase font-semibold">Radar Offline. Initiate Ping.</p>
                 )}
               </div>
             </div>
