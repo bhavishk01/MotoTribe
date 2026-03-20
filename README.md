@@ -37,7 +37,7 @@ To get a local copy up and running on your Windows machine, follow these steps.
 
 ### 1. Clone the Repository
 ```bash
-git clone [https://github.com/bhavishk01/MotoTribe.git](https://github.com/bhavishk01/MotoTribe.git)
+git clone https://github.com/bhavishk01/MotoTribe.git
 cd MotoTribe
 ```
 
