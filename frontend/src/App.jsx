@@ -1,11 +1,37 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { GoogleMap, useLoadScript, Marker, InfoWindow } from '@react-google-maps/api';
+
+const darkMapStyle = [
+  { elementType: "geometry", stylers: [{ color: "#212121" }] },
+  { elementType: "labels.icon", stylers: [{ visibility: "off" }] },
+  { elementType: "labels.text.fill", stylers: [{ color: "#757575" }] },
+  { elementType: "labels.text.stroke", stylers: [{ color: "#212121" }] },
+  { featureType: "administrative", elementType: "geometry", stylers: [{ color: "#757575" }] },
+  { featureType: "administrative.country", elementType: "labels.text.fill", stylers: [{ color: "#9e9e9e" }] },
+  { featureType: "poi", elementType: "labels.text.fill", stylers: [{ color: "#bdbdbd" }] },
+  { featureType: "poi.park", elementType: "geometry", stylers: [{ color: "#181818" }] },
+  { featureType: "poi.park", elementType: "labels.text.fill", stylers: [{ color: "#616161" }] },
+  { featureType: "poi.park", elementType: "labels.text.stroke", stylers: [{ color: "#1b1b1b" }] },
+  { featureType: "road", elementType: "geometry.fill", stylers: [{ color: "#2c2c2c" }] },
+  { featureType: "road", elementType: "labels.text.fill", stylers: [{ color: "#8a8a8a" }] },
+  { featureType: "road.arterial", elementType: "geometry", stylers: [{ color: "#373737" }] },
+  { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#3c3c3c" }] },
+  { featureType: "road.highway.controlled_access", elementType: "geometry", stylers: [{ color: "#4e4e4e" }] },
+  { featureType: "water", elementType: "geometry", stylers: [{ color: "#000000" }] },
+  { featureType: "water", elementType: "labels.text.fill", stylers: [{ color: "#3d3d3d" }] }
+];
+
+const libraries = ['places'];
 
 function App() {
-  // --- MAIN STATE ---
+  const { isLoaded, loadError } = useLoadScript({
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
+    libraries: libraries,
+  });
+
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentView, setCurrentView] = useState('home'); 
   
-  // --- AUTH STATE ---
   const [isRegistering, setIsRegistering] = useState(false);
   const [name, setName] = useState('');
   const [vehicle, setVehicle] = useState('');
@@ -13,9 +39,12 @@ function App() {
   const [password, setPassword] = useState('');
   const [authMessage, setAuthMessage] = useState('');
 
-  // --- GPS & CHAT STATE ---
   const [location, setLocation] = useState(null);
   const [status, setStatus] = useState('System Ready: Click to locate');
+  const [mapRef, setMapRef] = useState(null);
+  const [garages, setGarages] = useState([]);
+  const [selectedGarage, setSelectedGarage] = useState(null);
+
   const [messages, setMessages] = useState([
     { role: 'ai', text: 'How can I help you with your vehicle today? Describe the symptom, and get an instant professional-grade diagnosis.' }
   ]);
@@ -27,7 +56,30 @@ function App() {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping]);
 
-  // --- HELPER FUNCTIONS ---
+  useEffect(() => {
+    if (mapRef && location) {
+      const service = new window.google.maps.places.PlacesService(mapRef);
+      const request = {
+        location: location,
+        radius: '5000', // 5 kilometer radius
+        keyword: 'mechanic OR auto repair OR motorcycle repair'
+      };
+
+      service.nearbySearch(request, (results, searchStatus) => {
+        if (searchStatus === window.google.maps.places.PlacesServiceStatus.OK && results) {
+          setGarages(results);
+          setStatus(`Target Acquired! Found ${results.length} garages nearby.`);
+        } else {
+          setStatus('Coordinates found, but no garages detected nearby.');
+        }
+      });
+    }
+  }, [mapRef, location]);
+
+  const onMapLoad = (map) => {
+    setMapRef(map);
+  };
+
   const formatMessage = (text) => {
     return text.split('\n').map((line, i) => (
       <span key={i} style={{ display: 'block', marginBottom: '8px' }}>
@@ -38,15 +90,11 @@ function App() {
     ));
   };
 
-  // --- AUTHENTICATION FUNCTIONS ---
   const handleAuth = async (e) => {
     e.preventDefault();
     setAuthMessage('Processing...'); 
-    
     const endpoint = isRegistering ? '/api/register' : '/api/login';
-    const payload = isRegistering 
-      ? { name, email, password, vehicle } 
-      : { email, password };
+    const payload = isRegistering ? { name, email, password, vehicle } : { email, password };
 
     try {
       const response = await fetch(`http://localhost:5000${endpoint}`, {
@@ -54,9 +102,7 @@ function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      
       const data = await response.json();
-      
       if (response.ok) {
         if (isRegistering) {
           setAuthMessage('✅ Registration successful! Please Sign In.');
@@ -74,14 +120,14 @@ function App() {
 
   const handleEmergency = () => {
     setStatus('Scanning for GPS Coordinates...');
+    setCurrentView('map');
     if (!navigator.geolocation) {
       setStatus('GPS Error: Not supported by browser');
     } else {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          setStatus('Target Acquired!');
+          setStatus('Coordinates Locked. Scanning area for garages...');
           setLocation({ lat: position.coords.latitude, lng: position.coords.longitude });
-          setCurrentView('map');
         },
         () => setStatus('Connection Failed. Did you allow GPS access?'),
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
@@ -164,25 +210,12 @@ function App() {
             {isRegistering ? 'Sign In' : 'Sign Up'}
           </span>
         </p>
-
-        {!isRegistering && (
-          <>
-            <div className="my-6 flex items-center before:flex-1 before:border-t before:border-white/10 after:flex-1 after:border-t after:border-white/10">
-              <span className="px-3 text-gray-500 text-sm">OR</span>
-            </div>
-            <button className="w-full bg-white text-black border-none px-4 py-3 rounded-custom cursor-pointer font-bold flex justify-center items-center gap-3 text-sm transition-opacity hover:opacity-80">
-              <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5" />
-              Sign in with Google
-            </button>
-          </>
-        )}
       </div>
     </div>
   );
 
   const renderDashboard = () => (
     <div className="bg-black text-white antialiased font-sans">
-      {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-black/50 backdrop-blur-md border-b border-white/5">
         <nav className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center space-x-8">
@@ -206,7 +239,6 @@ function App() {
       </header>
 
       <main>
-        {/* Conditional View Rendering */}
         {currentView === 'home' && (
           <section className="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden">
             <div className="absolute inset-0 z-0">
@@ -238,12 +270,10 @@ function App() {
 
         {currentView === 'chat' && (
           <section className="py-32 relative min-h-screen overflow-hidden">
-            {/* NEW: Background Pattern added to Chat */}
             <div className="absolute inset-0 z-0">
               <div className="absolute inset-0 bg-black/60 z-10"></div>
               <div className="absolute inset-0 opacity-20 z-0" style={{ backgroundImage: "url('/bg-pattern.png')", backgroundRepeat: 'repeat', backgroundSize: '300px' }}></div>
             </div>
-
             <div className="max-w-7xl mx-auto px-6 relative z-10">
               <div className="grid lg:grid-cols-2 gap-16 items-center">
                 <div>
@@ -256,7 +286,6 @@ function App() {
                 <div className="rounded-2xl p-6 min-h-[600px] flex flex-col shadow-2xl relative overflow-hidden" style={{ background: 'rgba(25, 25, 25, 0.6)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
                   <div className="absolute -top-24 -right-24 w-48 h-48 bg-[#137fec]/20 rounded-full blur-3xl"></div>
                   
-                  {/* Dynamic Chat History */}
                   <div className="flex-1 space-y-6 overflow-y-auto mb-6 pr-2">
                     {messages.map((msg, index) => (
                       <div key={index} className={`flex items-start ${msg.role === 'user' ? 'justify-end' : ''} space-x-4`}>
@@ -283,7 +312,6 @@ function App() {
                     <div ref={chatEndRef} />
                   </div>
 
-                  {/* Chat Input */}
                   <form onSubmit={handleSendMessage} className="relative z-10">
                     <input value={inputMessage} onChange={(e) => setInputMessage(e.target.value)} className="w-full bg-black/60 border border-white/10 rounded-custom px-6 py-4 text-sm focus:ring-[#137fec] focus:border-[#137fec] outline-none transition-all backdrop-blur-md text-white" placeholder="Describe your vehicle issue..." type="text" />
                     <button type="submit" disabled={isTyping} className="absolute right-3 top-1/2 -translate-y-1/2 bg-[#137fec] p-2 rounded-custom hover:bg-[#0a4da0] transition-colors disabled:opacity-50">
@@ -298,7 +326,6 @@ function App() {
 
         {currentView === 'map' && (
           <section className="py-32 relative min-h-screen overflow-hidden">
-            {/* NEW: Background Pattern added to Map */}
             <div className="absolute inset-0 z-0">
               <div className="absolute inset-0 bg-black/60 z-10"></div>
               <div className="absolute inset-0 opacity-20 z-0" style={{ backgroundImage: "url('/bg-pattern.png')", backgroundRepeat: 'repeat', backgroundSize: '300px' }}></div>
@@ -313,20 +340,75 @@ function App() {
                 </button>
               </div>
               
-              <div className="relative rounded-2xl overflow-hidden border border-white/10 h-[600px] flex items-center justify-center bg-[#0a0a0a]/80 backdrop-blur-md shadow-2xl">
-                {location ? (
-                  <iframe title="Google Map" width="100%" height="100%" style={{ border: 0 }} loading="lazy" allowFullScreen src={`https://maps.google.com/maps?q=${location.lat},${location.lng}&z=16&output=embed`}></iframe>
-                ) : (
+              {/* THE REAL GOOGLE MAP */}
+              <div className="relative rounded-2xl overflow-hidden border border-white/10 h-[500px] flex items-center justify-center bg-[#0a0a0a]/80 backdrop-blur-md shadow-2xl mb-12">
+                {!isLoaded && <p className="animate-pulse text-gray-400 font-bold uppercase tracking-widest">Initializing Map Engine...</p>}
+                
+                {isLoaded && location && (
+                  <GoogleMap
+                    mapContainerStyle={{ width: '100%', height: '100%' }}
+                    center={location}
+                    zoom={14}
+                    onLoad={onMapLoad}
+                    options={{ styles: darkMapStyle, disableDefaultUI: true, zoomControl: true }}
+                  >
+                    {/* Blue dot for User */}
+                    <Marker position={location} icon={{ url: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png' }} />
+                    
+                    {/* Red markers for Garages */}
+                    {garages.map((garage, i) => (
+                      <Marker 
+                        key={i} 
+                        position={garage.geometry.location} 
+                        onClick={() => setSelectedGarage(garage)}
+                      />
+                    ))}
+
+                    {selectedGarage && (
+                      <InfoWindow position={selectedGarage.geometry.location} onCloseClick={() => setSelectedGarage(null)}>
+                        <div className="text-black p-2 max-w-xs">
+                          <h3 className="font-bold text-lg mb-1">{selectedGarage.name}</h3>
+                          <p className="text-sm text-gray-700">{selectedGarage.vicinity}</p>
+                        </div>
+                      </InfoWindow>
+                    )}
+                  </GoogleMap>
+                )}
+                
+                {isLoaded && !location && (
                   <p className="opacity-50 tracking-widest uppercase font-semibold">Radar Offline. Initiate Ping.</p>
                 )}
               </div>
+
+              {/* DYNAMIC GARAGE CARDS */}
+              {garages.length > 0 && (
+                <div>
+                  <h3 className="text-2xl font-bold mb-6 border-b border-white/10 pb-4">Nearest Expert Mechanics</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {garages.map((garage, i) => (
+                      <div key={i} className="bg-[#121212]/80 backdrop-blur-md border border-white/10 p-6 rounded-xl shadow-lg hover:border-[#137fec]/50 transition-colors cursor-pointer" onClick={() => { setLocation({lat: garage.geometry.location.lat(), lng: garage.geometry.location.lng()}); setSelectedGarage(garage); }}>
+                        <h4 className="text-xl font-bold text-white mb-2">{garage.name}</h4>
+                        <p className="text-gray-400 text-sm mb-4 min-h-[40px]">{garage.vicinity}</p>
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-yellow-400 font-bold bg-yellow-400/10 px-3 py-1 rounded-full">
+                            {garage.rating ? `${garage.rating} ⭐ (${garage.user_ratings_total})` : 'New Listing'}
+                          </span>
+                          <span className={`${garage.opening_hours?.open_now ? 'text-green-400' : 'text-red-400'} font-bold uppercase text-xs tracking-wider`}>
+                            {garage.opening_hours?.open_now ? 'Open Now' : 'Closed'}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
             </div>
           </section>
         )}
 
       </main>
 
-      {/* Footer */}
       <footer className="bg-[#0a0a0a] pt-20 pb-10 border-t border-white/5">
         <div className="max-w-7xl mx-auto px-6">
           <div className="pt-8 flex flex-col md:flex-row justify-between items-center text-xs text-gray-500">
@@ -352,7 +434,6 @@ function App() {
           animation: pulse-glow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
       `}</style>
-      
       {!isLoggedIn ? renderLogin() : renderDashboard()}
     </>
   );
